@@ -7,13 +7,17 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.example.furni.ui.auth.LoginScreen
+import com.example.furni.ui.auth.RegisterScreen
 import com.example.furni.ui.home.HomeScreen
+import com.example.furni.ui.products.ProductsScreen
+import com.example.furni.ui.profile.ProfileScreen
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route, // Member 6 will change this to Login later
+        startDestination = Screen.Login.route,
         modifier = modifier
     ) {
         composable(Screen.Home.route) {
@@ -25,8 +29,45 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onLoginClick = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onRegisterClick = { navController.navigate(Screen.Register.route) }
+            )
+        }
+
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                onRegisterClick = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                },
+                onLoginClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Products.route) {
+            ProductsScreen(
+                onProductClick = { id -> navController.navigate(Screen.ProductDetails.createRoute(id)) }
+            )
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                onLogoutClick = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // ---- Placeholders: replace with real screens as members finish ----
-        composable(Screen.Products.route) { Text("Products - Member 2") }
         composable(
             Screen.ProductDetails.route,
             arguments = listOf(navArgument("productId") { type = NavType.IntType })
@@ -38,8 +79,5 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
         composable(Screen.Checkout.route) { Text("Checkout - Member 5") }
         composable(Screen.OrderConfirmation.route) { Text("Confirmation - Member 5") }
         composable(Screen.Orders.route) { Text("Orders - Member 5") }
-        composable(Screen.Login.route) { Text("Login - Member 6") }
-        composable(Screen.Register.route) { Text("Register - Member 6") }
-        composable(Screen.Profile.route) { Text("Profile - Member 6") }
     }
 }
