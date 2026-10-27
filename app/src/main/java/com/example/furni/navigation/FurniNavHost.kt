@@ -9,9 +9,12 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.furni.ui.auth.LoginScreen
 import com.example.furni.ui.auth.RegisterScreen
+import com.example.furni.ui.cart.CartScreen
 import com.example.furni.ui.home.HomeScreen
+import com.example.furni.ui.orders.OrdersScreen
 import com.example.furni.ui.products.ProductsScreen
 import com.example.furni.ui.profile.ProfileScreen
+import androidx.navigation.NavGraph.Companion.findStartDestination
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
@@ -57,11 +60,28 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
+        composable(Screen.Cart.route) {
+            CartScreen(
+                onCheckoutClick = { navController.navigate(Screen.Checkout.route) }
+            )
+        }
+
+        composable(Screen.Orders.route) {
+            OrdersScreen()
+        }
+
         composable(Screen.Profile.route) {
             ProfileScreen(
                 onLogoutClick = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                },
+                onOrdersClick = {
+                    navController.navigate(Screen.Orders.route) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
             )
@@ -75,9 +95,7 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             val id = entry.arguments?.getInt("productId")
             Text("Product Details $id - Member 2")
         }
-        composable(Screen.Cart.route) { Text("Cart - Member 3") }
         composable(Screen.Checkout.route) { Text("Checkout - Member 5") }
         composable(Screen.OrderConfirmation.route) { Text("Confirmation - Member 5") }
-        composable(Screen.Orders.route) { Text("Orders - Member 5") }
     }
 }
