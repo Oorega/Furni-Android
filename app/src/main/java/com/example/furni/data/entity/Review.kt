@@ -22,7 +22,7 @@ import androidx.room.Index
     indices = [Index("userId"), Index("productId")]
 )
 data class Review (
-    @PrimaryKey(autoGenerate = true) val reviewId: Long? = 0,
+    @PrimaryKey(autoGenerate = true) val reviewId: Long? = null,
     val userId: Long?,
     val productId: Long?,
     val rating: Int,

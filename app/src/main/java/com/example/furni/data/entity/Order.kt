@@ -19,7 +19,7 @@ import androidx.room.Index
     indices = [Index("userId")]
 )
 data class Order (
-    @PrimaryKey(autoGenerate = true) val orderId: Long? = 0,
+    @PrimaryKey(autoGenerate = true) val orderId: Long? = null,
     val userId: Long?,
     val status : String = "Pending",
     val recipientName: String,

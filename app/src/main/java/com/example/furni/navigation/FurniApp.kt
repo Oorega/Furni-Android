@@ -14,9 +14,13 @@ fun FurniApp() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
+    // A destination's route may carry optional arguments (e.g. "products?categoryId={categoryId}"),
+    // so compare only the part before the "?" with the tab's route.
+    fun matchesTab(route: String?, tabRoute: String) = route?.substringBefore('?') == tabRoute
+
     // Show the bottom bar only on the 5 main tabs (hide on login, checkout, etc.)
     val showBottomBar = bottomNavItems.any { item ->
-        currentDestination?.hierarchy?.any { it.route == item.screen.route } == true
+        currentDestination?.hierarchy?.any { matchesTab(it.route, item.screen.route) } == true
     }
 
     Scaffold(
@@ -26,7 +30,7 @@ fun FurniApp() {
                     bottomNavItems.forEach { item ->
                         NavigationBarItem(
                             selected = currentDestination?.hierarchy
-                                ?.any { it.route == item.screen.route } == true,
+                                ?.any { matchesTab(it.route, item.screen.route) } == true,
                             onClick = {
                                 navController.navigate(item.screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {

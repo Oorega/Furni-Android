@@ -23,7 +23,7 @@ import androidx.room.Index
     indices = [Index("orderId"), Index("productId")]
 )
 data class OrderProduct (
-    @PrimaryKey(autoGenerate = true) val orderProductId: Long? = 0,
+    @PrimaryKey(autoGenerate = true) val orderProductId: Long? = null,
     val orderId: Long?,
     val productId: Long?,
     val productName: String,

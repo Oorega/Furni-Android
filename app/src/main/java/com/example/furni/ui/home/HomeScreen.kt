@@ -1,4 +1,3 @@
-
 package com.example.furni.ui.home
 
 import androidx.compose.foundation.clickable
@@ -11,36 +10,39 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.furni.ui.products.ProductImage
 
-// Temporary UI-only data. Real products come from Member 2/4 via Room later.
-private data class HomeCategory(val name: String, val icon: ImageVector)
-private data class FeaturedProduct(val id: Int, val name: String, val price: Double)
-
-private val categories = listOf(
-    HomeCategory("Living Room", Icons.Filled.Weekend),
-    HomeCategory("Bedroom", Icons.Filled.Bed),
-    HomeCategory("Outdoors", Icons.Filled.Deck)
-)
-
-private val featured = listOf(
-    FeaturedProduct(1, "Modern Sofa", 899.0),
-    FeaturedProduct(2, "Oak Bed Frame", 649.0),
-    FeaturedProduct(3, "Garden Lounge Set", 499.0),
-    FeaturedProduct(4, "Coffee Table", 199.0)
-)
+// Picks an icon for a category by name; unknown categories get a generic chair icon.
+private fun categoryIcon(name: String): ImageVector = when {
+    name.contains("living", ignoreCase = true) -> Icons.Filled.Weekend
+    name.contains("dining", ignoreCase = true) -> Icons.Filled.Restaurant
+    name.contains("bed", ignoreCase = true) -> Icons.Filled.Bed
+    name.contains("outdoor", ignoreCase = true) -> Icons.Filled.Deck
+    name.contains("kid", ignoreCase = true) || name.contains("study", ignoreCase = true) -> Icons.Filled.School
+    else -> Icons.Filled.Chair
+}
 
 @Composable
 fun HomeScreen(
-    onCategoryClick: (String) -> Unit,
+    // Called with the tapped category's id so the Shop screen can open pre-filtered.
+    onCategoryClick: (Long) -> Unit,
     onProductClick: (Int) -> Unit,
     onSearchClick: () -> Unit,
-    onShopNowClick: () -> Unit
+    onShopNowClick: () -> Unit,
+    viewModel: HomeViewModel = viewModel()
 ) {
+    val categories by viewModel.categories.collectAsState()
+    val featured by viewModel.featuredProducts.collectAsState()
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -85,45 +87,51 @@ fun HomeScreen(
             }
         }
 
-        // Categories
-        item { Text("Categories", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-        item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(categories) { cat ->
-                    Card(
-                        modifier = Modifier.clickable { onCategoryClick(cat.name) },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                    ) {
-                        Column(
-                            Modifier.padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+        // Categories (from the database)
+        if (categories.isNotEmpty()) {
+            item { Text("Categories", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(categories, key = { it.categoryId ?: it.name.hashCode().toLong() }) { cat ->
+                        Card(
+                            modifier = Modifier.clickable { cat.categoryId?.let(onCategoryClick) },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                         ) {
-                            Icon(cat.icon, contentDescription = cat.name, modifier = Modifier.size(32.dp))
-                            Spacer(Modifier.height(8.dp))
-                            Text(cat.name)
+                            Column(
+                                Modifier.padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(categoryIcon(cat.name), contentDescription = cat.name, modifier = Modifier.size(32.dp))
+                                Spacer(Modifier.height(8.dp))
+                                Text(cat.name)
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Featured products
-        item { Text("Featured", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-        item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(featured) { p ->
-                    Card(
-                        modifier = Modifier.width(160.dp).clickable { onProductClick(p.id) }
-                    ) {
-                        Column(Modifier.padding(12.dp)) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth().height(100.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(8.dp)
-                            ) {}  // image placeholder
-                            Spacer(Modifier.height(8.dp))
-                            Text(p.name, fontWeight = FontWeight.SemiBold)
-                            Text("$${p.price}", color = MaterialTheme.colorScheme.secondary)
+        // Featured products (from the database)
+        if (featured.isNotEmpty()) {
+            item { Text("Featured", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(featured, key = { it.productId ?: it.name.hashCode().toLong() }) { p ->
+                        Card(
+                            modifier = Modifier.width(160.dp).clickable {
+                                p.productId?.let { onProductClick(it.toInt()) }
+                            }
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                ProductImage(
+                                    imageUrl = p.imageUrl,
+                                    modifier = Modifier.fillMaxWidth().height(100.dp).clip(RoundedCornerShape(8.dp)),
+                                    targetWidthPx = 400
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(p.name, fontWeight = FontWeight.SemiBold)
+                                Text("$" + "%.2f".format(p.price), color = MaterialTheme.colorScheme.secondary)
+                            }
                         }
                     }
                 }
