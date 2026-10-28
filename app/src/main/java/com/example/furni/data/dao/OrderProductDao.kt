@@ -42,5 +42,4 @@ interface OrderProductDao {
     @Query("SELECT * FROM order_products WHERE productId = :productId")
     fun getOrderProductsByProductId(productId: Long): Flow<List<OrderProduct>>
 
-
 }

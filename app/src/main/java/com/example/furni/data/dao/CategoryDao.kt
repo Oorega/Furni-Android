@@ -54,4 +54,5 @@ interface CategoryDao {
     @Transaction
     @Query("SELECT * FROM categories WHERE categoryId = :categoryId")
     suspend fun getCategoryWithProducts(categoryId: Long): CategoryWithProducts?
+
 }

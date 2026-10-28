@@ -44,4 +44,5 @@ abstract class FurniDatabase : RoomDatabase() {
             }
         }
     }
+
 }

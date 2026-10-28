@@ -99,4 +99,5 @@ interface ProductDao {
     @Transaction
     @Query("SELECT * FROM products WHERE productId = :productId")
     suspend fun getProductWithReviews(productId: Long): ProductWithReviews?
+
 }

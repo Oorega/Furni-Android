@@ -54,4 +54,5 @@ interface UserDao {
     @Transaction
     @Query("SELECT * FROM users WHERE userId = :userId")
     suspend fun getUserWithReviews(userId: Long): UserWithReviews?
+
 }
