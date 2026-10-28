@@ -60,5 +60,4 @@ interface ReviewDao {
     """)
     fun getReviewCountForProduct(productId: Long): Flow<Int>
 
-
 }

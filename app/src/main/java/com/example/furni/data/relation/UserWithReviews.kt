@@ -13,4 +13,5 @@ data class UserWithReviews(
         entityColumn = "userId"
     )
     val reviews: List<Review>
+
 )

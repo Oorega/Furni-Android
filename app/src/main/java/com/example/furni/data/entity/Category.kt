@@ -9,4 +9,5 @@ data class Category (
     @PrimaryKey(autoGenerate = true) val categoryId: Long? = 0,
     val name: String,
     val description: String
+
 )

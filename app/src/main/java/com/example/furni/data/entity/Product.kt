@@ -22,4 +22,5 @@ data class Product (
     val price: Double,
     val quantity: Int,
     val imageUrl: String? = null
+
 )

@@ -13,4 +13,5 @@ data class CategoryWithProducts(
         entityColumn = "categoryId"
     )
     val products: List<Product>
+
 )

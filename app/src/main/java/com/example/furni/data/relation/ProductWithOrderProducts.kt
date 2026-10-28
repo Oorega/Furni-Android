@@ -13,4 +13,5 @@ data class ProductWithOrderProducts(
         entityColumn = "productId"
     )
     val orderProducts: List<OrderProduct>
+
 )
