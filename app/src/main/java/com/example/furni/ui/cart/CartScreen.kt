@@ -11,67 +11,176 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-// Static sample data, for layout only. Member 3 replaces it with real cart data.
-private data class CartItemUi(val id: Int, val name: String, val price: Double, val quantity: Int)
-
-private val sampleCart = listOf(
-    CartItemUi(1, "Modern Sofa", 899.0, 1),
-    CartItemUi(2, "Coffee Table", 199.0, 2),
-    CartItemUi(3, "Oak Bed Frame", 649.0, 1)
-)
-
-private fun money(value: Double) = "$" + "%.2f".format(value)
+private fun money(value: Double): String {
+    return "$" + "%.2f".format(value)
+}
 
 @Composable
-fun CartScreen(onCheckoutClick: () -> Unit) {
-    val subtotal = sampleCart.sumOf { it.price * it.quantity }
-    val shipping = 25.0
+fun CartScreen(
+    onCheckoutClick: () -> Unit,
+    cartViewModel: CartViewModel
+) {
+    // Observe the real cart data
+    val cartItems by cartViewModel.cartItems.collectAsState()
+
+    // Calculate prices
+    val subtotal = cartItems.sumOf {
+        it.product.price * it.quantity
+    }
+
+    val shipping = if (cartItems.isEmpty()) 0.0 else 25.0
     val total = subtotal + shipping
 
-    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
+
+        // Screen title
         Text(
-            "My Cart",
+            text = "My Cart",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
+            modifier = Modifier.padding(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 8.dp
+            )
         )
 
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(sampleCart, key = { it.id }) { item ->
-                Card(Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            modifier = Modifier.size(80.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {} // image placeholder
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(item.name, fontWeight = FontWeight.SemiBold)
-                            Text(money(item.price), color = MaterialTheme.colorScheme.secondary)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = {}) {
-                                    Icon(Icons.Filled.Remove, contentDescription = "Decrease")
+        // Empty cart message
+        if (cartItems.isEmpty()) {
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Your cart is empty",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+
+        } else {
+
+            // Cart products list
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(
+                    horizontal = 16.dp,
+                    vertical = 8.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(
+                    items = cartItems,
+                    key = { it.product.productId ?: 0L }
+                ) { item ->
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            // Product image placeholder
+                            Surface(
+                                modifier = Modifier.size(80.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {}
+
+                            Spacer(Modifier.width(12.dp))
+
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = item.product.name,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+
+                                Text(
+                                    text = money(item.product.price),
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+
+                                // Quantity controls
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            cartViewModel.updateQuantity(
+                                                item.product.productId!!,
+                                                item.quantity - 1
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Remove,
+                                            contentDescription = "Decrease"
+                                        )
+                                    }
+
+                                    Text(
+                                        text = "${item.quantity}",
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    IconButton(
+                                        onClick = {
+                                            cartViewModel.updateQuantity(
+                                                item.product.productId!!,
+                                                item.quantity + 1
+                                            )
+                                        },
+                                        enabled = item.quantity < item.product.quantity
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Add,
+                                            contentDescription = "Increase"
+                                        )
+                                    }
                                 }
-                                Text("${item.quantity}", fontWeight = FontWeight.Bold)
-                                IconButton(onClick = {}) {
-                                    Icon(Icons.Filled.Add, contentDescription = "Increase")
-                                }
+
+                                // Product total price
+                                Text(
+                                    text = "Item total: ${
+                                        money(item.product.price * item.quantity)
+                                    }",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
-                        }
-                        IconButton(onClick = {}) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Remove",
-                                tint = MaterialTheme.colorScheme.error)
+
+                            // Delete product
+                            IconButton(
+                                onClick = {
+                                    cartViewModel.removeFromCart(
+                                        item.product.productId!!
+                                    )
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = "Remove",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }
@@ -79,14 +188,42 @@ fun CartScreen(onCheckoutClick: () -> Unit) {
         }
 
         // Order summary
-        Surface(tonalElevation = 3.dp, shadowElevation = 8.dp) {
-            Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                SummaryRow("Subtotal", money(subtotal))
-                SummaryRow("Shipping", money(shipping))
-                HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                SummaryRow("Total", money(total), bold = true)
+        Surface(
+            tonalElevation = 3.dp,
+            shadowElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                SummaryRow(
+                    "Subtotal",
+                    money(subtotal)
+                )
+
+                SummaryRow(
+                    "Shipping",
+                    money(shipping)
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                SummaryRow(
+                    "Total",
+                    money(total),
+                    bold = true
+                )
+
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = onCheckoutClick, modifier = Modifier.fillMaxWidth()) {
+
+                Button(
+                    onClick = onCheckoutClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = cartItems.isNotEmpty()
+                ) {
                     Text("Proceed to Checkout")
                 }
             }
@@ -95,9 +232,33 @@ fun CartScreen(onCheckoutClick: () -> Unit) {
 }
 
 @Composable
-private fun SummaryRow(label: String, value: String, bold: Boolean = false) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
-        Text(value, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
+private fun SummaryRow(
+    label: String,
+    value: String,
+    bold: Boolean = false
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontWeight = if (bold) {
+                FontWeight.Bold
+            } else {
+                FontWeight.Normal
+            }
+        )
+
+        Text(
+            text = value,
+            fontWeight = if (bold) {
+                FontWeight.Bold
+            } else {
+                FontWeight.Normal
+            }
+        )
     }
 }
