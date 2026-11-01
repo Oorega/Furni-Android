@@ -17,9 +17,18 @@ import com.example.furni.ui.products.ProductsScreen
 import com.example.furni.ui.products.ProductDetailsScreen
 import com.example.furni.ui.profile.ProfileScreen
 import com.example.furni.ui.orders.OrderDetailsScreen
+import com.example.furni.ui.orders.OrderConfirmationScreen
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
+    fun goToTab(route: String) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Screen.Login.route,
@@ -159,13 +168,32 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
-        // Placeholder Screens
+        // Placeholder Screen
         composable(Screen.Checkout.route) {
             Text("Checkout - Member 5")
         }
 
-        composable(Screen.OrderConfirmation.route) {
-            Text("Confirmation - Member 5")
+        composable(
+            route = Screen.OrderConfirmation.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.LongType })
+        ) { entry ->
+            val orderId = entry.arguments?.getLong("orderId") ?: return@composable
+            OrderConfirmationScreen(
+                orderId = orderId,
+                onViewOrders = { goToTab(Screen.Orders.route) },
+                onContinueShopping = { goToTab(Screen.Home.route) }
+            )
+        }
+
+        composable(
+            route = Screen.OrderDetails.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.LongType })
+        ) { entry ->
+            val orderId = entry.arguments?.getLong("orderId") ?: return@composable
+            OrderDetailsScreen(
+                orderId = orderId,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
