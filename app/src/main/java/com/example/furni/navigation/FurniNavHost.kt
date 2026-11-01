@@ -20,6 +20,7 @@ import com.example.furni.ui.orders.OrderDetailsScreen
 import com.example.furni.ui.orders.OrderConfirmationScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.furni.ui.cart.CartViewModel
+import com.example.furni.ui.checkout.CheckoutScreen
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
@@ -176,11 +177,20 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
-        // Placeholder Screen
+        // Checkout Screen
         composable(Screen.Checkout.route) {
-            Text("Checkout - Member 5")
+            CheckoutScreen(
+                cartViewModel = cartViewModel,
+                onBack = { navController.popBackStack() },
+                onOrderPlaced = { orderId ->
+                    navController.navigate(Screen.OrderConfirmation.createRoute(orderId)) {
+                        popUpTo(Screen.Checkout.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
+        // Order Confirmation Screen
         composable(
             route = Screen.OrderConfirmation.route,
             arguments = listOf(navArgument("orderId") { type = NavType.LongType })
@@ -193,6 +203,7 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
+        // Order Details Screen
         composable(
             route = Screen.OrderDetails.route,
             arguments = listOf(navArgument("orderId") { type = NavType.LongType })
