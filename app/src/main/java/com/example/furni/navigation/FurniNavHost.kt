@@ -16,6 +16,7 @@ import com.example.furni.ui.orders.OrdersScreen
 import com.example.furni.ui.products.ProductsScreen
 import com.example.furni.ui.products.ProductDetailsScreen
 import com.example.furni.ui.profile.ProfileScreen
+import com.example.furni.ui.orders.OrderDetailsScreen
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
@@ -104,7 +105,11 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
 
         // Orders Screen
         composable(Screen.Orders.route) {
-            OrdersScreen()
+            OrdersScreen(
+                onOrderClick = { id ->
+                    navController.navigate(Screen.OrderDetails.createRoute(id))
+                }
+            )
         }
 
         // Profile Screen
