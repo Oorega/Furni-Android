@@ -16,24 +16,12 @@ import com.example.furni.ui.orders.OrdersScreen
 import com.example.furni.ui.products.ProductsScreen
 import com.example.furni.ui.products.ProductDetailsScreen
 import com.example.furni.ui.profile.ProfileScreen
-import com.example.furni.ui.orders.OrderDetailsScreen
-import com.example.furni.ui.orders.OrderConfirmationScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.furni.ui.cart.CartViewModel
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
-
     val cartViewModel: CartViewModel = viewModel()
-
-    fun goToTab(route: String) {
-        navController.navigate(route) {
-            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-            launchSingleTop = true
-            restoreState = true
-        }
-    }
-
     NavHost(
         navController = navController,
         startDestination = Screen.Login.route,
@@ -120,11 +108,7 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
 
         // Orders Screen
         composable(Screen.Orders.route) {
-            OrdersScreen(
-                onOrderClick = { id ->
-                    navController.navigate(Screen.OrderDetails.createRoute(id))
-                }
-            )
+            OrdersScreen()
         }
 
         // Profile Screen
@@ -176,32 +160,13 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
-        // Placeholder Screen
+        // Placeholder Screens
         composable(Screen.Checkout.route) {
             Text("Checkout - Member 5")
         }
 
-        composable(
-            route = Screen.OrderConfirmation.route,
-            arguments = listOf(navArgument("orderId") { type = NavType.LongType })
-        ) { entry ->
-            val orderId = entry.arguments?.getLong("orderId") ?: return@composable
-            OrderConfirmationScreen(
-                orderId = orderId,
-                onViewOrders = { goToTab(Screen.Orders.route) },
-                onContinueShopping = { goToTab(Screen.Home.route) }
-            )
-        }
-
-        composable(
-            route = Screen.OrderDetails.route,
-            arguments = listOf(navArgument("orderId") { type = NavType.LongType })
-        ) { entry ->
-            val orderId = entry.arguments?.getLong("orderId") ?: return@composable
-            OrderDetailsScreen(
-                orderId = orderId,
-                onBack = { navController.popBackStack() }
-            )
+        composable(Screen.OrderConfirmation.route) {
+            Text("Confirmation - Member 5")
         }
     }
 }
