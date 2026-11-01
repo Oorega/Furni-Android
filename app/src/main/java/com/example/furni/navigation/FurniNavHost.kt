@@ -18,9 +18,14 @@ import com.example.furni.ui.products.ProductDetailsScreen
 import com.example.furni.ui.profile.ProfileScreen
 import com.example.furni.ui.orders.OrderDetailsScreen
 import com.example.furni.ui.orders.OrderConfirmationScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.furni.ui.cart.CartViewModel
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
+
+    val cartViewModel: CartViewModel = viewModel()
+
     fun goToTab(route: String) {
         navController.navigate(route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -108,7 +113,8 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             CartScreen(
                 onCheckoutClick = {
                     navController.navigate(Screen.Checkout.route)
-                }
+                },
+                cartViewModel = cartViewModel
             )
         }
 
@@ -162,8 +168,10 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
                 onBack = {
                     navController.popBackStack()
                 },
+//
                 onAddToCart = { productId, quantity ->
-                    // TODO: Connect to cart functionality
+                    cartViewModel.addToCart(productId, quantity)
+                    navController.navigate(Screen.Cart.route)
                 }
             )
         }
