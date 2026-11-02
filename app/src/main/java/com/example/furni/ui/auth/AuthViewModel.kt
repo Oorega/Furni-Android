@@ -62,6 +62,16 @@ class AuthViewModel(
                     throw Exception("Please enter a valid email address")
                 }
 
+                if (password.length < 8) {
+                    throw Exception("Password must be at least 8 characters long")
+                }
+                if (!password.any { it.isDigit() }) {
+                    throw Exception("Password must contain at least one number")
+                }
+                if (!password.any { it.isUpperCase() }) {
+                    throw Exception("Password must contain at least one uppercase letter")
+                }
+
                 val nameParts = name.trim().split(" ", limit = 2)
                 val firstName = nameParts[0]
                 val lastName = if (nameParts.size > 1) nameParts[1] else ""

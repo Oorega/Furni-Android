@@ -1,172 +1,200 @@
 package com.example.furni.navigation
 
-import androidx.compose.material3.Text
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.example.furni.data.database.FurniDatabase
+import com.example.furni.ui.auth.AuthViewModel
 import com.example.furni.ui.auth.LoginScreen
 import com.example.furni.ui.auth.RegisterScreen
 import com.example.furni.ui.cart.CartScreen
+import com.example.furni.ui.cart.CartViewModel
+import com.example.furni.ui.checkout.CheckoutScreen
 import com.example.furni.ui.home.HomeScreen
+import com.example.furni.ui.orders.OrderConfirmationScreen
 import com.example.furni.ui.orders.OrdersScreen
 import com.example.furni.ui.products.ProductsScreen
 import com.example.furni.ui.products.ProductDetailsScreen
+import com.example.furni.ui.profile.EditProfileScreen
 import com.example.furni.ui.profile.ProfileScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.furni.ui.cart.CartViewModel
+import com.example.furni.ui.profile.ProfileViewModel
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
     val cartViewModel: CartViewModel = viewModel()
+
     NavHost(
         navController = navController,
         startDestination = Screen.Login.route,
         modifier = modifier
     ) {
-        // Home Screen
         composable(Screen.Home.route) {
             HomeScreen(
-                onCategoryClick = { categoryId ->
-                    navController.navigate(
-                        Screen.Products.createRoute(categoryId)
-                    )
-                },
-                onProductClick = { id ->
-                    navController.navigate(
-                        Screen.ProductDetails.createRoute(id)
-                    )
-                },
-                onSearchClick = {
-                    navController.navigate(Screen.Products.route)
-                },
-                onShopNowClick = {
-                    navController.navigate(Screen.Products.route)
-                }
+                onCategoryClick = { categoryId -> navController.navigate(Screen.Products.createRoute(categoryId)) },
+                onProductClick = { id -> navController.navigate(Screen.ProductDetails.createRoute(id)) },
+                onSearchClick = { navController.navigate(Screen.Products.route) },
+                onShopNowClick = { navController.navigate(Screen.Products.route) }
             )
         }
 
-        // Login Screen
         composable(Screen.Login.route) {
+            val context = LocalContext.current
+            val database = FurniDatabase.getInstance(context)
+            val viewModel: AuthViewModel = viewModel(
+                factory = viewModelFactory { initializer { AuthViewModel(database, context) } }
+            )
+
             LoginScreen(
-                onLoginClick = {
+                viewModel = viewModel,
+                onLoginSuccess = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
-                onRegisterClick = {
-                    navController.navigate(Screen.Register.route)
-                }
+                onRegisterClick = { navController.navigate(Screen.Register.route) }
             )
         }
 
-        // Register Screen
         composable(Screen.Register.route) {
+            val context = LocalContext.current
+            val database = FurniDatabase.getInstance(context)
+            val viewModel: AuthViewModel = viewModel(
+                factory = viewModelFactory { initializer { AuthViewModel(database, context) } }
+            )
+
             RegisterScreen(
-                onRegisterClick = {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Register.route) { inclusive = true }
+                viewModel = viewModel,
+                onRegisterSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
-                onLoginClick = {
-                    navController.popBackStack()
-                }
+                onLoginClick = { navController.popBackStack() }
             )
         }
 
-        // Products Screen (supports an optional category ID)
         composable(
             route = Screen.Products.ROUTE_PATTERN,
-            arguments = listOf(
-                navArgument(Screen.Products.CATEGORY_ARG) {
-                    type = NavType.LongType
-                    defaultValue = -1L
-                }
-            )
+            arguments = listOf(navArgument(Screen.Products.CATEGORY_ARG) { type = NavType.LongType; defaultValue = -1L })
         ) {
-            ProductsScreen(
-                onProductClick = { id ->
-                    navController.navigate(
-                        Screen.ProductDetails.createRoute(id)
-                    )
-                }
-            )
+            ProductsScreen(onProductClick = { id -> navController.navigate(Screen.ProductDetails.createRoute(id)) })
         }
 
-        // Cart Screen
         composable(Screen.Cart.route) {
             CartScreen(
-                onCheckoutClick = {
-                    navController.navigate(Screen.Checkout.route)
-                },
+                onCheckoutClick = { navController.navigate(Screen.Checkout.route) },
                 cartViewModel = cartViewModel
             )
         }
 
-        // Orders Screen
         composable(Screen.Orders.route) {
-            OrdersScreen()
+            OrdersScreen(
+                onOrderClick = { orderId ->
+                    navController.navigate(Screen.OrderConfirmation.createRoute(orderId))
+                }
+            )
         }
 
-        // Profile Screen
         composable(Screen.Profile.route) {
+            val context = LocalContext.current
+            val database = FurniDatabase.getInstance(context)
+            val profileViewModel: ProfileViewModel = viewModel(
+                factory = viewModelFactory { initializer { ProfileViewModel(database, context) } }
+            )
+
             ProfileScreen(
+                viewModel = profileViewModel,
                 onLogoutClick = {
+                    context.getSharedPreferences("furni_prefs", Context.MODE_PRIVATE).edit().clear().apply()
                     navController.navigate(Screen.Login.route) {
-                        popUpTo(navController.graph.id) {
-                            inclusive = true
-                        }
+                        popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },
                 onOrdersClick = {
                     navController.navigate(Screen.Orders.route) {
-                        popUpTo(
-                            navController.graph.findStartDestination().id
-                        ) {
-                            saveState = true
-                        }
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
+                    }
+                },
+                onEditProfileClick = { navController.navigate("edit_profile") }
+            )
+        }
+
+        composable("edit_profile") {
+            val context = LocalContext.current
+            val database = FurniDatabase.getInstance(context)
+            val profileViewModel: ProfileViewModel = viewModel(
+                factory = viewModelFactory { initializer { ProfileViewModel(database, context) } }
+            )
+
+            EditProfileScreen(
+                viewModel = profileViewModel,
+                onBackClick = { navController.popBackStack() },
+                onAccountDeleted = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
                     }
                 }
             )
         }
 
-        // Product Details Screen
-        composable(
-            Screen.ProductDetails.route,
-            arguments = listOf(
-                navArgument("productId") {
-                    type = NavType.IntType
+        composable(Screen.Checkout.route) {
+            CheckoutScreen(
+                cartViewModel = cartViewModel,
+                onBack = { navController.popBackStack() },
+                onOrderPlaced = { orderId ->
+                    navController.navigate(Screen.OrderConfirmation.createRoute(orderId)) {
+                        popUpTo(Screen.Checkout.route) { inclusive = true }
+                    }
                 }
             )
-        ) { entry ->
-            val id = entry.arguments?.getInt("productId")
-                ?: return@composable
+        }
 
+        composable(
+            route = Screen.OrderConfirmation.route,
+            arguments = listOf(navArgument(Screen.OrderConfirmation.ORDER_ID_ARG) { type = NavType.LongType })
+        ) { entry ->
+            val orderId = entry.arguments?.getLong(Screen.OrderConfirmation.ORDER_ID_ARG) ?: return@composable
+
+            OrderConfirmationScreen(
+                orderId = orderId,
+                onViewOrders = {
+                    navController.navigate(Screen.Orders.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                    }
+                },
+                onContinueShopping = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(
+            Screen.ProductDetails.route,
+            arguments = listOf(navArgument("productId") { type = NavType.IntType })
+        ) { entry ->
+            val id = entry.arguments?.getInt("productId") ?: return@composable
             ProductDetailsScreen(
                 productId = id.toLong(),
-                onBack = {
-                    navController.popBackStack()
-                },
-//
+                onBack = { navController.popBackStack() },
                 onAddToCart = { productId, quantity ->
                     cartViewModel.addToCart(productId, quantity)
                     navController.navigate(Screen.Cart.route)
                 }
             )
-        }
-
-        // Placeholder Screens
-        composable(Screen.Checkout.route) {
-            Text("Checkout - Member 5")
-        }
-
-        composable(Screen.OrderConfirmation.route) {
-            Text("Confirmation - Member 5")
         }
     }
 }
