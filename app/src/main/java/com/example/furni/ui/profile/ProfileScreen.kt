@@ -3,103 +3,144 @@ package com.example.furni.ui.profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun ProfileScreen(
+    viewModel: ProfileViewModel,
     onLogoutClick: () -> Unit,
-    onOrdersClick: () -> Unit = {}
+    onOrdersClick: () -> Unit,
+    onEditProfileClick: () -> Unit
 ) {
+    val user by viewModel.user.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadUser()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // Avatar
         Box(
             modifier = Modifier
-                .size(96.dp)
+                .size(100.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
+                .background(Color(0xFF8D6E63)),
             contentAlignment = Alignment.Center
         ) {
+            val initial = user?.firstName?.firstOrNull()?.toString()?.uppercase() ?: "?"
             Text(
-                "A",
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onPrimary,
+                text = initial,
+                color = Color.White,
+                fontSize = 40.sp,
                 fontWeight = FontWeight.Bold
             )
         }
-        Spacer(Modifier.height(12.dp))
-        Text("Your Name", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text("your@email.com", style = MaterialTheme.typography.bodyMedium)
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // Menu
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-        ) {
-            Column {
-                ProfileRow(Icons.Filled.Edit, "Edit Profile")
-                HorizontalDivider()
-                ProfileRow(Icons.Filled.Receipt, "My Orders", onClick = onOrdersClick)
-                HorizontalDivider()
-                ProfileRow(Icons.Filled.LocationOn, "Shipping Address")
-                HorizontalDivider()
-                ProfileRow(Icons.Filled.Info, "Help & About")
-            }
-        }
+        Text(
+            text = if (user != null) "${user?.firstName} ${user?.lastName}" else "Loading...",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
 
-        Spacer(Modifier.height(24.dp))
+        Text(
+            text = user?.email ?: "",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        ProfileMenuItem(
+            icon = Icons.Default.Edit,
+            title = "Edit Profile",
+            onClick = onEditProfileClick
+        )
+        ProfileMenuItem(
+            icon = Icons.AutoMirrored.Filled.List,
+            title = "My Orders",
+            onClick = onOrdersClick
+        )
+        ProfileMenuItem(
+            icon = Icons.Default.LocationOn,
+            title = "Shipping Address",
+            onClick = { /* TODO */ }
+        )
+        ProfileMenuItem(
+            icon = Icons.Default.Info,
+            title = "Help & About",
+            onClick = { /* TODO */ }
+        )
+
+        Spacer(Modifier.weight(1f))
 
         OutlinedButton(
             onClick = onLogoutClick,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
         ) {
-            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
+            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
             Spacer(Modifier.width(8.dp))
             Text("Log Out")
         }
+        Spacer(Modifier.height(16.dp))
     }
 }
 
 @Composable
-private fun ProfileRow(icon: ImageVector, title: String, onClick: () -> Unit = {}) {
-    Row(
+fun ProfileMenuItem(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit
+) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 4.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.width(16.dp))
-        Text(title, modifier = Modifier.weight(1f))
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(16.dp))
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+        }
     }
 }
