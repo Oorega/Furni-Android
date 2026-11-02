@@ -16,9 +16,25 @@ import com.example.furni.ui.orders.OrdersScreen
 import com.example.furni.ui.products.ProductsScreen
 import com.example.furni.ui.products.ProductDetailsScreen
 import com.example.furni.ui.profile.ProfileScreen
+import com.example.furni.ui.orders.OrderDetailsScreen
+import com.example.furni.ui.orders.OrderConfirmationScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.furni.ui.cart.CartViewModel
+import com.example.furni.ui.checkout.CheckoutScreen
 
 @Composable
 fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
+
+    val cartViewModel: CartViewModel = viewModel()
+
+    fun goToTab(route: String) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Screen.Login.route,
@@ -98,13 +114,18 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             CartScreen(
                 onCheckoutClick = {
                     navController.navigate(Screen.Checkout.route)
-                }
+                },
+                cartViewModel = cartViewModel
             )
         }
 
         // Orders Screen
         composable(Screen.Orders.route) {
-            OrdersScreen()
+            OrdersScreen(
+                onOrderClick = { id ->
+                    navController.navigate(Screen.OrderDetails.createRoute(id))
+                }
+            )
         }
 
         // Profile Screen
@@ -148,19 +169,50 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
                 onBack = {
                     navController.popBackStack()
                 },
+//
                 onAddToCart = { productId, quantity ->
-                    // TODO: Connect to cart functionality
+                    cartViewModel.addToCart(productId, quantity)
+                    navController.navigate(Screen.Cart.route)
                 }
             )
         }
 
-        // Placeholder Screens
+        // Checkout Screen
         composable(Screen.Checkout.route) {
-            Text("Checkout - Member 5")
+            CheckoutScreen(
+                cartViewModel = cartViewModel,
+                onBack = { navController.popBackStack() },
+                onOrderPlaced = { orderId ->
+                    navController.navigate(Screen.OrderConfirmation.createRoute(orderId)) {
+                        popUpTo(Screen.Checkout.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
-        composable(Screen.OrderConfirmation.route) {
-            Text("Confirmation - Member 5")
+        // Order Confirmation Screen
+        composable(
+            route = Screen.OrderConfirmation.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.LongType })
+        ) { entry ->
+            val orderId = entry.arguments?.getLong("orderId") ?: return@composable
+            OrderConfirmationScreen(
+                orderId = orderId,
+                onViewOrders = { goToTab(Screen.Orders.route) },
+                onContinueShopping = { goToTab(Screen.Home.route) }
+            )
+        }
+
+        // Order Details Screen
+        composable(
+            route = Screen.OrderDetails.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.LongType })
+        ) { entry ->
+            val orderId = entry.arguments?.getLong("orderId") ?: return@composable
+            OrderDetailsScreen(
+                orderId = orderId,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
