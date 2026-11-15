@@ -160,6 +160,7 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
+        // Order Confirmation Screen
         composable(
             route = Screen.OrderConfirmation.route,
             arguments = listOf(navArgument(Screen.OrderConfirmation.ORDER_ID_ARG) { type = NavType.LongType })
@@ -182,6 +183,7 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
+        // Order Details Screen
         composable(
             Screen.ProductDetails.route,
             arguments = listOf(navArgument("productId") { type = NavType.IntType })
