@@ -39,12 +39,15 @@ interface UserDao {
     @Delete
     suspend fun deleteUser(user: User): Int
 
-
     @Query("SELECT * FROM users ORDER BY firstName ASC")
     fun getAllUsers(): Flow<List<User>>
 
     @Query("SELECT * FROM users WHERE userId = :userId")
     suspend fun getUserById(userId: Long): User?
+
+
+    @Query("SELECT * FROM users WHERE email = :email AND password = :password LIMIT 1")
+    suspend fun login(email: String, password: String): User?
 
 
     @Transaction
