@@ -14,7 +14,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.furni.data.database.FurniDatabase
 import com.example.furni.ui.auth.AuthViewModel
-import com.example.furni.ui.auth.LoginScreen
+import com.example.furni.ui.auth.LoginXmlScreen
 import com.example.furni.ui.auth.RegisterScreen
 import com.example.furni.ui.cart.CartScreen
 import com.example.furni.ui.cart.CartViewModel
@@ -53,7 +53,7 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
                 factory = viewModelFactory { initializer { AuthViewModel(database, context) } }
             )
 
-            LoginScreen(
+            LoginXmlScreen(
                 viewModel = viewModel,
                 onLoginSuccess = {
                     navController.navigate(Screen.Home.route) {
@@ -183,7 +183,7 @@ fun FurniNavHost(navController: NavHostController, modifier: Modifier = Modifier
             )
         }
 
-        // Order Details Screen
+        // Product Details Screen
         composable(
             Screen.ProductDetails.route,
             arguments = listOf(navArgument("productId") { type = NavType.IntType })
