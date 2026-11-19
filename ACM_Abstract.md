@@ -1,103 +1,73 @@
-# Furni: An On-Device Android Application for Furniture Catalog Browsing and Order Management
+Furni: Design and Implementation of a Local-First Android Furniture Shopping Application
+Abstract
 
-## Abstract
+Mobile commerce applications require the integration of product catalog management, user accounts, shopping-cart operations, inventory tracking, and order processing within a consistent user experience. Furni is a native Android furniture-shopping application developed in Kotlin that demonstrates these capabilities through a local-first architecture. The application employs Jetpack Compose for its user interface, Navigation Compose for screen transitions, Android ViewModels and Kotlin coroutines for application-state management, and Room with SQLite for persistent data storage.
 
-Mobile shopping applications require a coordinated combination of catalog presentation, account management, local state persistence, shopping-cart operations, inventory control, and order tracking. **Furni** is a native Android furniture-shopping application implemented in Kotlin that demonstrates these capabilities in an entirely on-device architecture. The application uses Jetpack Compose for its primary user interface, Jetpack Navigation for route management, Android ViewModels and Kotlin coroutines for presentation-state handling, and Room with SQLite for durable local persistence. The repository defines an entity model for users, furniture categories, products, orders, order-line items, and reviews. It also includes a database seeding process that provides five furniture categories, twelve representative products, and four sample reviews when the database is initialized with no catalog data.
+The system provides user registration and login, profile management, category-based product browsing, product details, shopping-cart management, checkout, and order history. Its data model represents users, furniture categories, products, orders, order-line items, and reviews. A database initialization process populates the application with five furniture categories, twelve sample products, and four reviews when the catalog is initially empty. A central aspect of the implementation is transactional checkout: the application calculates order totals, creates an order and its associated line items, and updates product inventory within a Room database transaction. Stock availability is checked before quantities are updated, helping maintain consistency between orders and inventory.
 
-Furni begins at a login route and provides registration and password-validation workflows, profile editing, logout, category and product browsing, product details, cart management, checkout, order confirmation, and order history. Checkout is implemented as an atomic Room transaction: the system calculates subtotal and shipping totals, inserts an order and its associated line items, and decrements product quantities only when sufficient stock is available. Navigation state, the active bottom navigation item, and the back stack are managed through Jetpack Navigation Compose. Local login state is retained with Android `SharedPreferences`, while catalog and transactional data remain in the Room database.
+Furni demonstrates how modern Android development components can be combined to implement a local shopping workflow without requiring a remote backend. However, the current implementation does not provide remote authentication, payment processing, delivery-service integration, or multi-device synchronization. Furthermore, the available repository tests do not evaluate the application's principal business workflows. This work therefore presents an implementation-focused account of the system and identifies security, testing, persistence, and scalability improvements needed for further development.
 
-This document describes the repository as implemented rather than as a proposed system. No remote service or external API is present, and no algorithmic recommendation, payment, or delivery component is implemented. Empirical evaluation is unavailable: the committed unit and instrumentation tests are framework template tests rather than behavioral tests of authentication, database operations, inventory control, or UI workflows. Accordingly, this abstract reports implemented capabilities and architectural evidence only, and identifies testing, security, synchronization, and scalability as areas requiring further work.
+Keywords: Android Development, Mobile Commerce, Kotlin, Jetpack Compose, Room Database, SQLite, MVVM, Inventory Management.
 
-**Keywords:** Android, Jetpack Compose, Kotlin, Room, SQLite, mobile e-commerce, MVVM, local data persistence.
+CCS Concepts
+Human-centered computing → Mobile computing
+Software and its engineering → Software architectures
+Information systems → Database management systems
+Information systems → Electronic commerce
+1. Introduction and Problem Statement
 
-## CCS Concepts
+Mobile shopping applications must coordinate multiple interconnected operations, including account management, product discovery, cart updates, inventory control, and order processing. Maintaining consistency between these operations is particularly important when an order changes product quantities or when users navigate between different application screens.
 
-- **Human-centered computing → Mobile computing**
-- **Software and its engineering → Software organization and properties → Software system structures**
-- **Information systems → Data management systems → Database management system engines**
-- **Information systems → Electronic commerce**
+Furni addresses these requirements through the development of a native Android furniture-shopping application. The project focuses on implementing a structured shopping workflow using platform-native technologies while maintaining application data locally. Its primary objective is to demonstrate how catalog information, user accounts, shopping-cart state, and order records can be integrated into a single mobile application.
 
-## 1. Introduction and Background
+Unlike conventional cloud-based commerce systems, Furni uses an entirely on-device data architecture. This approach provides a self-contained environment for demonstrating mobile application development and local data management. However, it also introduces limitations concerning remote access, account security, and synchronization across devices.
 
-Android applications for retail and catalogue browsing must coordinate responsive interfaces with persistent domain data and reliable state transitions. Conventional mobile shopping workflows include account access, browsing, selection, cart editing, order creation, and later retrieval of purchase information. These concerns are not independent: for example, cart quantities must respect available stock, and order creation must ensure that order records and inventory updates remain consistent.
+2. System Design and Methodology
 
-Furni addresses this domain as a self-contained mobile prototype. It uses modern Android libraries rather than a server-dependent implementation. Its Room database stores the principal entities, and Android ViewModels expose observable state to Jetpack Compose screens. This local-first design is suitable for demonstrating application structure and offline-capable workflows, although it does not by itself provide multi-device synchronization or a shared production e-commerce backend.
+Furni follows a Model-View-ViewModel (MVVM)-oriented architecture that separates the user interface, application logic, and data persistence responsibilities.
 
-## 2. Problem Statement
+The presentation layer is implemented using Jetpack Compose and Material 3 components. Navigation Compose manages transitions between authentication, home, product listing, product details, shopping cart, checkout, profile, and order-related screens. ViewModels manage application operations and expose observable data through Kotlin Flow and StateFlow, allowing the interface to react to changes in application state.
 
-The project investigates how to organize a small mobile furniture-shopping system within a native Android application. The specific implementation problem is to maintain coherent catalog, account, cart, inventory, and order data while allowing navigation between representative shopping activities. In particular, the system must:
+The persistence layer uses Room, an Android abstraction over SQLite, to manage relational application data. The database consists of six principal entities: User, Category, Product, Order, OrderProduct, and Review. Foreign-key relationships associate products with categories, orders with users, and order-line records with their corresponding orders and products. A unique database constraint is also defined for user email addresses.
 
-1. represent related furniture catalogue entities and associations locally;
-2. support account registration and login without a remote identity service;
-3. present categories and products with category filtering and product detail views;
-4. prevent cart quantities from exceeding available stock;
-5. record an order and its line items consistently with inventory changes; and
-6. present order information only for the currently authenticated local user.
+Database initialization is performed through a seeding mechanism that inserts sample categories, products, and reviews when the catalog is empty. This provides a reproducible dataset for demonstrating the application's main functionality.
 
-The repository implements these concerns, but it does not address payment processing, real-time backend communication, delivery logistics, or remote authentication. Password storage and authentication are local and therefore have limitations that would need to be resolved before production use.
+Application behavior is distributed across dedicated ViewModels. Authentication operations manage registration, login, profile updates, and local session state. Product-related screens retrieve catalog information and support category filtering. The shopping-cart functionality maintains selected products and validates requested quantities against available inventory.
 
-## 3. Proposed Approach and Methodology
+The checkout process represents an important part of the system methodology. When a user submits an order, the application calculates the subtotal and shipping cost, verifies the active local user, and performs the order creation process within a database transaction. The transaction inserts the order and associated order-line records before decrementing product quantities. If a stock update fails, an exception is raised so that the database transaction can be rolled back. This design aims to preserve consistency between order records and inventory data.
 
-Furni follows a presentation–domain–persistence separation centered on Android Jetpack components. `FurniApp` owns the navigation controller and materializes a bottom navigation bar for the home, products, cart, orders, and profile routes. `FurniNavHost` maps route patterns to Compose screens and forwards navigation callbacks. Routes with arguments, including category identifiers and order or product identifiers, are declared as typed navigation parameters.
+3. Implementation and Technologies
 
-The data layer is implemented with Room entities and Data Access Objects (DAOs). The `FurniDatabase` database contains `Category`, `Product`, `User`, `Order`, `OrderProduct`, and `Review` entities at schema version 1. Foreign-key relationships associate products with categories, orders with users, and order-line items with orders and products. The database also defines an indexed unique constraint on user email addresses.
+The application is implemented in Kotlin using modern Android development technologies. Jetpack Compose provides the primary interface, while Navigation Compose manages application navigation. Android ViewModels and Kotlin coroutines support asynchronous operations and presentation-state management. Room and SQLite provide persistent storage for catalog, account, review, and order information.
 
-ViewModels implement application behavior and publish `StateFlow` or `Flow` values to Compose UI components. `HomeViewModel` combines category records with the first six in-stock products. `CartViewModel` maintains an in-memory cart and clamps quantities to available database stock. `CheckoutViewModel` performs subtotal calculation and invokes a Room transaction for order placement. `AuthViewModel` validates registration inputs, inserts users, and saves the selected user identifier in `SharedPreferences`. `OrderDetailsViewModel` loads an order only when its stored user identifier matches the active local session.
+The application includes local registration and login, profile management, category-based product browsing, product-detail views, sample reviews, stock-aware cart operations, checkout, order confirmation, and order history. Product images are maintained within the application's assets directory. Local session information is retained through Android SharedPreferences.
 
-Database seeding is guarded by a coroutine mutex and executes only when no products are present. The seed operation creates categories, then products associated with those categories, and finally sample reviews. It is safe to invoke on repeated launches and reports failures through Android logging.
+The application does not depend on an external REST API or remote database. Authentication and account information are handled locally, and order records are stored on the device. Consequently, the implementation demonstrates local shopping functionality rather than a complete production e-commerce infrastructure.
 
-## 4. Implementation and Technologies
+4. Results and Evaluation
 
-The project uses Kotlin 2.2.10 and Android Gradle Plugin 9.4.1. The application has a minimum SDK of 24, a target and compile SDK level of 37, Java 11 source compatibility, and Compose build support. Its principal dependencies include AndroidX Core KTX, Lifecycle Runtime KTX, Lifecycle ViewModel Compose, Activity Compose, Compose Material 3, Navigation Compose, and extended Material icons.
+The repository demonstrates an implemented shopping workflow covering the main stages of a furniture purchase, from account access and product browsing to checkout and order retrieval. Its relational database structure defines the associations between users, products, categories, and orders, while transactional checkout provides a mechanism for coordinating order creation and inventory updates.
 
-The primary UI is implemented with Jetpack Compose in Kotlin. One login-related screen additionally uses a corresponding XML layout. Material 3 components, custom theme definitions, and a bottom navigation structure provide the interface. Assets for twelve furniture products are stored in `app/src/main/assets/product`, and the UI resolves these asset paths for product images.
+However, no comprehensive empirical evaluation or application-specific behavioral testing is available in the repository. The existing unit test checks a basic arithmetic expression, while the instrumentation test verifies the application package name. Neither test evaluates authentication, database integrity, inventory management, transaction rollback, navigation, or order processing.
 
-Room 2.8.4 supplies local persistence. KSP generates Room implementation code from entity and DAO definitions. Coroutines provide asynchronous database access, and `StateFlow` supports reactive updates in UI state. The project contains JUnit and AndroidX test dependencies, including Espresso and Compose UI test support, but no repository evidence indicates execution of a domain-specific test suite.
+Therefore, the project's results are limited to its implemented functionality and architectural design. Performance, usability, reliability, and scalability have not yet been established through systematic experiments.
 
-Implemented user-facing capabilities include:
+5. Conclusion and Future Work
 
-- local registration and login;
-- profile viewing and editing, including account deletion;
-- logout and session clearing;
-- category-based and general product listings;
-- product-detail views and sample reviews;
-- stock-aware cart insertion and quantity editing;
-- checkout with recipient and shipping-address input;
-- fixed shipping-fee calculation;
-- transactional order creation and inventory decrement;
-- order confirmation and order-history/detail views.
+Furni demonstrates the design and implementation of a local-first Android furniture-shopping application using Kotlin and modern Android development frameworks. Its main contribution is the integration of catalog browsing, account management, cart operations, inventory updates, and order processing within a structured native mobile architecture.
 
-The application does not contain REST clients, remote database dependencies, payment SDKs, notification services, or authentication providers. The account is consequently a local demonstration of identity and session behavior rather than a cloud-backed user service.
+Despite implementing the principal shopping workflow, several limitations remain. User credentials are stored locally without password hashing, the shopping cart is maintained in memory, and the application does not provide remote authentication, payment processing, delivery integration, or cross-device synchronization.
 
-## 5. Architecture and System Workflow
+Future development should focus on secure credential management, persistent shopping-cart storage, backend integration, and comprehensive automated testing. Additional evaluation should examine database consistency, checkout reliability, application responsiveness, navigation behavior, and performance with larger product catalogs.
 
-At launch, `MainActivity` starts an asynchronous database-seeding operation and initializes the Compose content under `FurniTheme`. `FurniApp` installs the navigation bar and host. The navigation graph begins at login, with login and registration routes creating `AuthViewModel` instances connected to the Room database.
+References
 
-After successful authentication, navigation removes the login route from the back stack and enters the home destination. The home screen obtains categories and featured in-stock products through `StateFlow`. Selecting a category navigates to a filtered product screen; selecting a product opens the product-detail route. Adding an item to the cart is handled by the shared `CartViewModel`, ensuring that an item can exist only with a positive quantity and cannot exceed the current stock field.
+[1] Google. Android Developers. Jetpack Compose Documentation. https://developer.android.com/compose
 
-Checkout calls `placeOrder` with cart items and recipient fields. The ViewModel first verifies an active local user and a non-empty cart. It then executes a transaction that writes the order, writes order-line items, and decrements stock. Any stock update yielding zero affected rows throws an exception, causing the surrounding transaction to fail. Successful placement exposes the generated order identifier for confirmation navigation.
+[2] Google. Android Developers. Room Persistence Library. https://developer.android.com/training/data-storage/room
 
-Order history and detail routes retrieve persisted orders and line items. The detail view checks both order existence and ownership by the active user before exposing the order. Logout clears all values in the application preferences, and account deletion is routed to return the user to login.
+[3] Google. Android Developers. Navigation for Jetpack Compose. https://developer.android.com/develop/ui/compose/navigation
 
-## 6. Results and Evaluation
+[4] JetBrains. Kotlin Documentation. https://kotlinlang.org/docs/home.html
 
-No empirical performance evaluation, user study, device-compatibility study, or behavioral test report is available in the repository. The committed local unit test only checks the arithmetic expression `2 + 2 == 4`. The committed instrumented test only verifies that the application package name is `com.example.furni`. Therefore, these tests do not evaluate application features, data integrity, inventory behavior, authentication, or navigation.
-
-The repository nevertheless provides demonstrable implementation points that can serve as the basis for evaluation: the seed data creates a reproducible catalog, foreign keys define relational integrity, the checkout operation is transactional, and stock checks are implemented in both cart updates and checkout updates. The absence of executable feature tests means that their runtime correctness has not been established by the repository.
-
-## 7. Conclusion and Future Work
-
-Furni demonstrates an end-to-end local furniture-shopping workflow on Android. Its principal contributions are architectural and educational: it combines Jetpack Compose, Navigation Compose, ViewModels, Kotlin coroutines, Room, local session state, and a relational entity model within a navigable mobile application. The implementation models catalogue, account, cart, order, review, and stock concepts while keeping domain behavior close to the platform’s native APIs.
-
-Several limitations should be addressed before the project can be described as production-ready. Passwords are stored directly in the local Room database and are not hashed or protected by platform credential APIs. Local registration does not provide account recovery or cryptographic authentication. The cart is in memory and is lost if the owning process or navigation lifetime is reset unexpectedly. No remote synchronization, conflict resolution, or multi-device account model is implemented. Checkout does not integrate a payment provider or real delivery-service API, and order status is effectively a default local value.
-
-Future work should add hashed credential storage or a secure backend identity provider; persistent cart storage; repository abstractions and dependency injection; Room migration and rollback testing; and domain-specific unit, integration, and Compose UI tests. A meaningful evaluation should cover registration and login validation, stock exhaustion, transaction rollback, foreign-key behavior, order ownership, navigation state restoration, device-size responsiveness, and database and UI performance under larger catalog datasets.
-
-## References
-
-No external research citations are included because the repository contains no in-project bibliography and no verified study results. The implementation should be cited through its repository record and relevant official Android and Jetpack API documentation when submitted to an ACM venue:
-
-- Android Jetpack Compose documentation.
-- Android Jetpack Navigation documentation.
-- AndroidX Room persistence library documentation.
-- Kotlin coroutines and Flow documentation.
+[5] JetBrains. Kotlin Coroutines Documentation. https://kotlinlang.org/docs/coroutines-overview.html
